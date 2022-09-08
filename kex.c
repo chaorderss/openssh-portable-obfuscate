@@ -62,6 +62,7 @@
 #include "dispatch.h"
 #include "monitor.h"
 
+#include "obfuscate.h"
 #include "ssherr.h"
 #include "sshbuf.h"
 #include "digest.h"
@@ -468,9 +469,12 @@ kex_send_newkeys(struct ssh *ssh)
 		return r;
 	debug("SSH2_MSG_NEWKEYS sent");
 	ssh_dispatch_set(ssh, SSH2_MSG_NEWKEYS, &kex_input_newkeys);
-	if (ssh->kex->ext_info_c && (ssh->kex->flags & KEX_INITIAL) != 0)
+	if (ssh->kex->ext_info_c && (ssh->kex->flags & KEX_INITIAL) != 0) {
+		sshpkt_disable_obfuscation(ssh);
 		if ((r = kex_send_ext_info(ssh)) != 0)
 			return r;
+		sshpkt_enable_obfuscation(ssh);
+	}
 	debug("expecting SSH2_MSG_NEWKEYS");
 	return 0;
 }
@@ -548,6 +552,7 @@ kex_input_newkeys(int type, u_int32_t seq, struct ssh *ssh)
 	kex->flags &= ~KEX_INIT_SENT;
 	free(kex->name);
 	kex->name = NULL;
+	sshpkt_disable_obfuscation(ssh);
 	return 0;
 }
 
@@ -1250,14 +1255,42 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms,
 		goto out;
 	}
 
+	/* Make copy and obfuscate the original */
+	if (sshpkt_get_obfuscation(ssh) == 1) {
+		if ((cp = sshbuf_dup_string(our_version)) == NULL) {
+			error("%s: sshbuf_dup_string failed for obfuscation", __func__);
+			r = SSH_ERR_ALLOC_FAIL;
+			goto out;
+		}
+		obfuscate_output(sshbuf_mutable_ptr(our_version), sshbuf_len(our_version));
+	}
+
 	if (atomicio(vwrite, ssh_packet_get_connection_out(ssh),
 	    sshbuf_mutable_ptr(our_version),
 	    sshbuf_len(our_version)) != sshbuf_len(our_version)) {
 		oerrno = errno;
 		debug_f("write: %.100s", strerror(errno));
 		r = SSH_ERR_SYSTEM_ERROR;
+		if (sshpkt_get_obfuscation(ssh) == 1) {
+			free(cp);
+		}
 		goto out;
 	}
+
+	/* Restore the original */
+	if (sshpkt_get_obfuscation(ssh) == 1) {
+		if ((r = sshbuf_consume(our_version, sshbuf_len(our_version))) != 0) {
+			error("%s: sshbuf_consume failed for obfuscation", __func__);
+			free(cp);
+			goto out;
+		}
+		if ((r = sshbuf_put(our_version, cp, strlen(cp))) != 0) {
+			error("%s: sshbuf_put failed for obfuscation", __func__);
+			free(cp);
+			goto out;
+		}
+	}
+
 	if ((r = sshbuf_consume_end(our_version, 2)) != 0) { /* trim \r\n */
 		oerrno = errno;
 		error_fr(r, "sshbuf_consume_end");
@@ -1314,6 +1347,8 @@ kex_exchange_identification(struct ssh *ssh, int timeout_ms,
 				r = SSH_ERR_SYSTEM_ERROR;
 				goto out;
 			}
+			if(sshpkt_get_obfuscation(ssh) == 1)
+			  obfuscate_input(&c, 1);
 			if (c == '\r') {
 				expect_nl = 1;
 				continue;

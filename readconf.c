@@ -144,7 +144,7 @@ typedef enum {
 	oBadOption,
 	oHost, oMatch, oInclude,
 	oForwardAgent, oForwardX11, oForwardX11Trusted, oForwardX11Timeout,
-	oGatewayPorts, oExitOnForwardFailure,
+	oGatewayPorts, oExitOnForwardFailure, oObfuscateHandshake, oObfuscateKeyword,
 	oPasswordAuthentication,
 	oXAuthLocation,
 	oIdentityFile, oHostname, oPort, oRemoteForward, oLocalForward,
@@ -321,6 +321,8 @@ static struct {
 	{ "proxyjump", oProxyJump },
 	{ "securitykeyprovider", oSecurityKeyProvider },
 	{ "knownhostscommand", oKnownHostsCommand },
+	{ "obfuscatehandshake", oObfuscateHandshake },
+	{ "obfuscatekeyword", oObfuscateKeyword },
 
 	{ NULL, oBadOption }
 };
@@ -2201,6 +2203,16 @@ parse_pubkey_algos:
 			*charptr = xstrdup(arg);
 		break;
 
+	case oObfuscateHandshake:
+		intptr = &options->obfuscate_handshake;
+		goto parse_flag;
+
+	case oObfuscateKeyword:
+		if (*activep)
+			options->obfuscate_handshake = 1;
+		charptr = &options->obfuscate_keyword;
+		goto parse_string;
+
 	case oDeprecated:
 		debug("%s line %d: Deprecated option \"%s\"",
 		    filename, linenum, keyword);
@@ -2440,6 +2452,8 @@ initialize_options(Options * options)
 	options->add_keys_to_agent_lifespan = -1;
 	options->identity_agent = NULL;
 	options->visual_host_key = -1;
+	options->obfuscate_handshake = 0;
+	options->obfuscate_keyword = NULL;
 	options->ip_qos_interactive = -1;
 	options->ip_qos_bulk = -1;
 	options->request_tty = -1;

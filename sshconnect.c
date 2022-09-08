@@ -69,6 +69,7 @@
 #include "monitor_fdpass.h"
 #include "ssh2.h"
 #include "version.h"
+#include "obfuscate.h"
 #include "authfile.h"
 #include "ssherr.h"
 #include "authfd.h"
@@ -299,6 +300,12 @@ ssh_proxy_connect(struct ssh *ssh, const char *host, const char *host_arg,
 	/* Set the connection file descriptors. */
 	if (ssh_packet_set_connection(ssh, pout[0], pin[1]) == NULL)
 		return -1; /* ssh_packet_set_connection logs error */
+
+	if(options.obfuscate_handshake) {
+		if(options.obfuscate_keyword)
+			obfuscate_set_keyword(options.obfuscate_keyword);
+		sshpkt_enable_obfuscation(ssh);
+	}
 
 	return 0;
 }
@@ -567,6 +574,11 @@ ssh_connect_direct(struct ssh *ssh, const char *host, struct addrinfo *aitop,
 	/* Set the connection. */
 	if (ssh_packet_set_connection(ssh, sock, sock) == NULL)
 		return -1; /* ssh_packet_set_connection logs error */
+	if(options.obfuscate_handshake) {
+		if(options.obfuscate_keyword)
+			obfuscate_set_keyword(options.obfuscate_keyword);
+		sshpkt_enable_obfuscation(ssh);
+	}
 
 	return 0;
 }
@@ -1588,6 +1600,9 @@ ssh_login(struct ssh *ssh, Sensitive *sensitive, const char *orighost,
 	/* Convert the user-supplied hostname into all lowercase. */
 	host = xstrdup(orighost);
 	lowercase(host);
+
+	if(options.obfuscate_handshake)
+		obfuscate_send_seed(ssh_packet_get_connection_out(ssh));
 
 	/* Exchange protocol version identification strings with the server. */
 	if ((r = kex_exchange_identification(ssh, timeout_ms, NULL)) != 0)

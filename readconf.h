@@ -144,6 +144,8 @@ typedef struct {
 	int	permit_local_command;
 	char	*remote_command;
 	int	visual_host_key;
+	int obfuscate_handshake;
+	char *obfuscate_keyword;
 
 	int	request_tty;
 	int	session_type;

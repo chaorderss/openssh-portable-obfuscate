@@ -2453,13 +2453,14 @@ main(int argc, char **argv)
 	infile = stdin;
 
 	while ((ch = getopt(argc, argv,
-	    "1246AafhNpqrvCc:D:i:l:o:s:S:b:B:F:J:P:R:")) != -1) {
+	    "1246AafhNpqrvCc:D:i:l:o:s:S:b:B:F:J:P:R:zZ:")) != -1) {
 		switch (ch) {
 		/* Passed through to ssh(1) */
 		case 'A':
 		case '4':
 		case '6':
 		case 'C':
+		case 'z':
 			addargs(&args, "-%c", ch);
 			break;
 		/* Passed through to ssh(1) with argument */
@@ -2468,6 +2469,7 @@ main(int argc, char **argv)
 		case 'c':
 		case 'i':
 		case 'o':
+		case 'Z':
 			addargs(&args, "-%c", ch);
 			addargs(&args, "%s", optarg);
 			break;

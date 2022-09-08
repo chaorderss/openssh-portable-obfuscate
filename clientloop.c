@@ -1472,7 +1472,7 @@ client_request_forwarded_tcpip(struct ssh *ssh, const char *request_type,
 {
 	Channel *c = NULL;
 	struct sshbuf *b = NULL;
-	char *listen_address, *originator_address;
+	char *listen_address, *originator_address=NULL;
 	u_int listen_port, originator_port;
 	int r;
 

@@ -94,6 +94,7 @@
 #include "channels.h"
 #include "ssh.h"
 #include "packet.h"
+#include "obfuscate.h"
 #include "ssherr.h"
 #include "sshbuf.h"
 
@@ -176,6 +177,8 @@ struct session_state {
 
 	/* Set to true if we are authenticated. */
 	int after_authentication;
+
+	int obfuscation;
 
 	int keep_alive_timeouts;
 
@@ -1200,6 +1203,8 @@ ssh_packet_send2_wrapped(struct ssh *ssh)
 		if ((r = sshbuf_put(state->output, macbuf, mac->mac_len)) != 0)
 			goto out;
 	}
+	if(state->obfuscation)
+		obfuscate_output(cp, sshbuf_len(state->outgoing_packet));
 #ifdef PACKET_DEBUG
 	fprintf(stderr, "encrypted: ");
 	sshbuf_dump(state->output, stderr);
@@ -1534,6 +1539,8 @@ ssh_packet_read_poll2(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 		if ((r = sshbuf_reserve(state->incoming_packet, block_size,
 		    &cp)) != 0)
 			goto out;
+		if(state->obfuscation)
+			obfuscate_input(sshbuf_mutable_ptr(state->input), block_size);
 		if ((r = cipher_crypt(state->receive_context,
 		    state->p_send.seqnr, cp, sshbuf_ptr(state->input),
 		    block_size, 0, 0)) != 0)
@@ -1599,6 +1606,8 @@ ssh_packet_read_poll2(struct ssh *ssh, u_char *typep, u_int32_t *seqnr_p)
 			goto out;
 		}
 	}
+	if(state->obfuscation)
+		obfuscate_input(sshbuf_mutable_ptr(state->input), need);
 	if ((r = sshbuf_reserve(state->incoming_packet, aadlen + need,
 	    &cp)) != 0)
 		goto out;
@@ -2716,4 +2725,26 @@ sshpkt_add_padding(struct ssh *ssh, u_char pad)
 {
 	ssh->state->extra_pad = pad;
 	return 0;
+}
+
+void
+sshpkt_enable_obfuscation(struct ssh *ssh)
+{
+	debug("Obfuscation enabled");
+	ssh->state->obfuscation = 1;
+}
+
+void
+sshpkt_disable_obfuscation(struct ssh *ssh)
+{
+	if(ssh->state->obfuscation) {
+		debug("Obfuscation disabled");
+		ssh->state->obfuscation = 0;
+	}
+}
+
+int
+sshpkt_get_obfuscation(struct ssh *ssh)
+{
+	return ssh->state->obfuscation;
 }

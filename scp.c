@@ -642,7 +642,7 @@ main(int argc, char **argv)
 
 	fflag = Tflag = tflag = 0;
 	while ((ch = getopt(argc, argv,
-	    "12346ABCTdfOpqRrstvD:F:J:M:P:S:c:i:l:o:")) != -1) {
+	    "12346ABCTdfOpqRrstvD:F:J:M:P:S:c:i:l:o:zZ:")) != -1) {
 		switch (ch) {
 		/* User-visible flags. */
 		case '1':
@@ -655,6 +655,7 @@ main(int argc, char **argv)
 		case '4':
 		case '6':
 		case 'C':
+		case 'z':
 			addargs(&args, "-%c", ch);
 			addargs(&remote_remote_args, "-%c", ch);
 			break;
@@ -672,6 +673,7 @@ main(int argc, char **argv)
 		case 'i':
 		case 'F':
 		case 'J':
+		case 'Z':
 			addargs(&remote_remote_args, "-%c", ch);
 			addargs(&remote_remote_args, "%s", optarg);
 			addargs(&args, "-%c", ch);

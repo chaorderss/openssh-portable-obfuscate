@@ -125,6 +125,7 @@
 #include "ssh-gss.h"
 #endif
 #include "monitor_wrap.h"
+#include "obfuscate.h"
 #include "ssh-sandbox.h"
 #include "auth-options.h"
 #include "version.h"
@@ -278,6 +279,9 @@ struct include_list includes = TAILQ_HEAD_INITIALIZER(includes);
 
 /* message to be displayed after login */
 struct sshbuf *loginmsg;
+
+/* Enable handshake obfuscation */
+int use_obfuscation = 0;
 
 /* Unprivileged user */
 struct passwd *privsep_pw = NULL;
@@ -1967,7 +1971,7 @@ main(int ac, char **av)
 	struct ssh *ssh = NULL;
 	extern char *optarg;
 	extern int optind;
-	int r, opt, on = 1, already_daemon, remote_port;
+	int r, opt, on = 1, already_daemon, remote_port, local_port;
 	int sock_in = -1, sock_out = -1, newsock = -1;
 	const char *remote_ip, *rdomain;
 	char *fp, *line, *laddr, *logfile = NULL;
@@ -2625,6 +2629,14 @@ done_loading_hostkeys:
 	channel_set_af(ssh, options.address_family);
 	process_permitopen(ssh, &options);
 
+	local_port = ssh_local_port(ssh);
+	for(i = 0; i < options.num_obfuscated_ports; i++) {
+		if(options.obfuscated_ports[i] == local_port) {
+			use_obfuscation = 1;
+			break;
+		}
+	}
+
 	/* Set SO_KEEPALIVE if requested. */
 	if (options.tcp_keep_alive && ssh_packet_connection_is_on_socket(ssh) &&
 	    setsockopt(sock_in, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof(on)) == -1)
@@ -2683,6 +2695,13 @@ done_loading_hostkeys:
 	if (!debug_flag)
 		alarm(options.login_grace_time);
 
+	if(use_obfuscation) {
+		if(options.obfuscate_keyword)
+			obfuscate_set_keyword(options.obfuscate_keyword);
+		sshpkt_enable_obfuscation(ssh);
+		obfuscate_receive_seed(ssh, sock_in);
+	}
+
 	if ((r = kex_exchange_identification(ssh, -1,
 	    options.version_addendum)) != 0)
 		sshpkt_fatal(ssh, r, "banner exchange");
@@ -2708,8 +2727,12 @@ idexch_done:
 	auth_debug_reset();
 
 	if (use_privsep) {
-		if (privsep_preauth(ssh) == 1)
+
+		if (privsep_preauth(ssh) == 1) {
+			if(use_obfuscation)
+				sshpkt_disable_obfuscation(ssh);
 			goto authenticated;
+		}
 	} else if (have_agent) {
 		if ((r = ssh_get_authentication_socket(&auth_sock)) != 0) {
 			error_r(r, "Unable to get agent socket");

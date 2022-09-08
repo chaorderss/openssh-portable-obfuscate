@@ -496,6 +496,7 @@
     <ClInclude Include="$(OpenSSH-Src-Path)uuencode.h" />
     <ClInclude Include="$(OpenSSH-Src-Path)version.h" />
     <ClInclude Include="$(OpenSSH-Src-Path)xmalloc.h" />
+    <ClInclude Include="..\..\..\obfuscate.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(OpenSSH-Src-Path)clientloop.c" />
@@ -507,6 +508,7 @@
     <ClCompile Include="$(OpenSSH-Src-Path)contrib\win32\win32compat\win32_sshtty.c" />
     <ClCompile Include="$(OpenSSH-Src-Path)contrib\win32\win32compat\win32-utf8.c" />
     <ClCompile Include="$(OpenSSH-Src-Path)ssh-sk-client.c" />
+    <ClCompile Include="..\..\..\obfuscate.c" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="version.rc" />

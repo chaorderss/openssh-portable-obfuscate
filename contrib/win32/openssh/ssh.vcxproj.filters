@@ -285,6 +285,9 @@
     <ClInclude Include="$(OpenSSH-Src-Path)xmalloc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\obfuscate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(OpenSSH-Src-Path)clientloop.c">
@@ -312,6 +315,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="$(OpenSSH-Src-Path)ssh-sk-client.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\obfuscate.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -182,6 +182,9 @@ void	sshpkt_fatal(struct ssh *ssh, int r, const char *fmt, ...)
 	    __attribute__((format(printf, 3, 4)))
 	    __attribute__((noreturn));
 int	sshpkt_msg_ignore(struct ssh *, u_int);
+void	sshpkt_enable_obfuscation(struct ssh *);
+void	sshpkt_disable_obfuscation(struct ssh *);
+int sshpkt_get_obfuscation(struct ssh *);
 
 int	sshpkt_put(struct ssh *ssh, const void *v, size_t len);
 int	sshpkt_putb(struct ssh *ssh, const struct sshbuf *b);

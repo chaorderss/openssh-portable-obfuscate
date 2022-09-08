@@ -35,6 +35,7 @@ sshd
 !regress/misc/fuzz-harness/Makefile
 !regress/unittests/sshsig/Makefile
 tags
+**/*.orig
 
 # Ignores in Windows fork
 /bin/x64/Debug

@@ -209,6 +209,11 @@ typedef struct {
 	u_int   num_permitted_listens;
 
 	char   *chroot_directory;
+
+	int obfuscated_ports[MAX_PORTS];
+	u_int num_obfuscated_ports;
+	char *obfuscate_keyword;
+
 	char   *revoked_keys_file;
 	char   *trusted_user_ca_keys;
 	char   *authorized_keys_command;
